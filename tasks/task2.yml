@@ -1,0 +1,58 @@
+---
+- name: Настройка пользователя и SSH
+  hosts: local
+  become: yes
+  vars:
+    username: devops 
+    ssh_key: "~/.ssh/id_rsa.pub"  
+
+  tasks:
+    - name: Создать пользователя
+      user:
+        name: "{{ username }}"
+    	state: present
+    	shell: /bin/bash
+    	create_home: yes
+    	home: "/home/{{ username }}"
+
+    - name: Добавить пользователя в группу sudo
+      user:
+        name: "{{ username }}"
+        groups: sudo
+        append: yes
+
+    - name: Создать .ssh директорию
+      file:
+        path: "/home/{{ username }}/.ssh"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0700'
+
+    - name: Добавить SSH ключ
+      authorized_key:
+        user: "{{ username }}"
+        state: present
+        key: "{{ lookup('file', ssh_key) }}"
+
+    - name: Отключить аутентификацию по паролю в SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      notify: Restart sshd
+
+    - name: Создать рабочую директорию
+      file:
+        path: "/opt/{{ username }}_workdir"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0660'
+
+  handlers:
+    - name: Restart sshd
+      service:
+        name: sshd
+        state: restarted
