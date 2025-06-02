@@ -76,8 +76,10 @@ for user in $users; do
     dir="$base_dir/${user}_workdir"
     mkdir -p "$dir" || { log ERROR "Не удалось создать директорию $dir"; continue; }
 
-    chown "$user:dev" "$dir"
+    chown "$user:$user" "$dir"
     chmod 660 "$dir"
+
+    setfacl -m g:dev:r-x "$dir"
 
     log INFO "Директория $dir создана для $user"
 done
