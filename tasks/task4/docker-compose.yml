@@ -1,0 +1,39 @@
+networks:
+  custom_bridge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.10.0/28
+
+volumes:
+  pg_data:
+
+services:
+  web:
+    image: nginx:latest
+    container_name: web_server
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      custom_bridge:
+        ipv4_address: 10.10.10.2
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      custom_bridge:
+        ipv4_address: 10.10.10.3
+        aliases:
+          - new_db
+          - dev_db  
